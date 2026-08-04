@@ -64,15 +64,14 @@ TEAM03_FITNESSCHURN/
 
 ## Team
 
-**Campus:** Alliance
 
 **Squad:** 69
 
 **Team:** 03
 
-Member 1
-Member 2
-Member 3
+Angel
+Diya
+Rachel 
 
 ---
 
