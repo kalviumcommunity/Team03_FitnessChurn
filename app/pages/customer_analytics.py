@@ -1,11 +1,43 @@
 import streamlit as st
-import pandas as pd
+import sys
+import os
+
+sys.path.append(
+    os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "..")
+    )
+)
+
+from src.analytics import (
+    load_data,
+    churn_rate_by_contract,
+    churn_rate_by_group_visits,
+    engagement_churn_relationship,
+    lifetime_churn_relationship
+)
+
+
+# --------------------------------------------------
+# PAGE CONFIGURATION
+# --------------------------------------------------
 
 st.set_page_config(
     page_title="Customer Analytics",
     page_icon="📊",
     layout="wide"
 )
+
+
+# --------------------------------------------------
+# LOAD DATA
+# --------------------------------------------------
+
+df = load_data()
+
+
+# --------------------------------------------------
+# PAGE HEADER
+# --------------------------------------------------
 
 st.title("Customer Analytics")
 
@@ -45,11 +77,54 @@ with col3:
 with col4:
     engagement = st.selectbox(
         "Engagement Segment",
-        ["All Segments", "Highly Engaged", "Moderately Engaged", "Low Engagement"]
+        [
+            "All Segments",
+            "Highly Engaged",
+            "Moderately Engaged",
+            "Low Engagement"
+        ]
     )
 
 
 st.divider()
+
+
+# --------------------------------------------------
+# ANALYTICS DATA
+# --------------------------------------------------
+
+contract_data = churn_rate_by_contract(df)
+
+contract_data["Contract Period"] = contract_data[
+    "Contract Period"
+].map({
+    1: "1 Month",
+    6: "6 Months",
+    12: "12 Months"
+})
+
+
+group_data = churn_rate_by_group_visits(df)
+
+
+engagement_data = engagement_churn_relationship(df)
+
+engagement_data = engagement_data.rename(
+    columns={
+        "Avg_class_frequency_current_month":
+        "Average Visits / Month"
+    }
+)
+
+
+lifetime_data = lifetime_churn_relationship(df)
+
+lifetime_data = lifetime_data.rename(
+    columns={
+        "Lifetime":
+        "Average Lifetime (Months)"
+    }
+)
 
 
 # --------------------------------------------------
@@ -59,24 +134,13 @@ st.divider()
 col1, col2 = st.columns(2)
 
 
+# --------------------------------------------------
+# CHART 1 — CONTRACT PERIOD
+# --------------------------------------------------
+
 with col1:
 
     st.subheader("Churn Rate by Contract Period")
-
-    contract_data = pd.DataFrame(
-        {
-            "Contract Period": [
-                "1 Month",
-                "6 Months",
-                "12 Months"
-            ],
-            "Churn Rate": [
-                42,
-                18,
-                9
-            ]
-        }
-    )
 
     st.bar_chart(
         contract_data,
@@ -84,118 +148,167 @@ with col1:
         y="Churn Rate"
     )
 
+    highest_contract = contract_data.loc[
+        contract_data["Churn Rate"].idxmax()
+    ]
+
+    lowest_contract = contract_data.loc[
+        contract_data["Churn Rate"].idxmin()
+    ]
+
     st.info(
-        "Insight: Contract duration can be compared with churn "
-        "to identify higher-risk membership segments."
+        f"Insight: {highest_contract['Contract Period']} "
+        f"members have the highest churn rate at "
+        f"{highest_contract['Churn Rate']:.2f}%, while "
+        f"{lowest_contract['Contract Period']} members have "
+        f"the lowest churn rate at "
+        f"{lowest_contract['Churn Rate']:.2f}%."
     )
 
+
+# --------------------------------------------------
+# CHART 2 — GROUP VISITS
+# --------------------------------------------------
 
 with col2:
 
     st.subheader("Churn Rate by Group Visits")
 
-    group_data = pd.DataFrame(
-        {
-            "Group Visit": [
-                "No Group Visits",
-                "Group Visits"
-            ],
-            "Members": [
-                26.3,
-                73.7
-            ]
-        }
-    )
-
     st.bar_chart(
         group_data,
-        x="Group Visit",
-        y="Members"
+        x="Group Visits",
+        y="Churn Rate"
     )
 
+    group_churn = group_data.loc[
+        group_data["Group Visits"] == "Group Visits",
+        "Churn Rate"
+    ].iloc[0]
+
+    no_group_churn = group_data.loc[
+        group_data["Group Visits"] == "No Group Visits",
+        "Churn Rate"
+    ].iloc[0]
+
+    difference = no_group_churn - group_churn
+
     st.success(
-        "Insight: Group participation can be analysed "
-        "to understand its relationship with retention."
+        f"Insight: Members with group visits have a "
+        f"{group_churn:.2f}% churn rate compared with "
+        f"{no_group_churn:.2f}% for members without group "
+        f"visits — a difference of {difference:.2f} "
+        f"percentage points."
     )
 
 
 st.write("")
 
+
 col3, col4 = st.columns(2)
 
+
+# --------------------------------------------------
+# CHART 3 — ENGAGEMENT VS CHURN
+# --------------------------------------------------
 
 with col3:
 
     st.subheader("Engagement Frequency vs Churn")
 
-    engagement_data = pd.DataFrame(
-        {
-            "Visits / Week": [
-                1,
-                2,
-                3,
-                4,
-                5
-            ],
-            "Churn Rate": [
-                82,
-                45,
-                15,
-                7,
-                3
-            ]
-        }
-    )
-
-    st.line_chart(
+    st.bar_chart(
         engagement_data,
-        x="Visits / Week",
-        y="Churn Rate"
+        x="Churn Status",
+        y="Average Visits / Month"
     )
 
+    retained_frequency = engagement_data.loc[
+        engagement_data["Churn Status"] == "Retained",
+        "Average Visits / Month"
+    ].iloc[0]
+
+    churned_frequency = engagement_data.loc[
+        engagement_data["Churn Status"] == "Churned",
+        "Average Visits / Month"
+    ].iloc[0]
+
+    st.info(
+        f"Insight: Retained members average "
+        f"{retained_frequency:.2f} visits per month, "
+        f"compared with {churned_frequency:.2f} for "
+        f"churned members."
+    )
+
+
+# --------------------------------------------------
+# CHART 4 — MEMBER LIFETIME
+# --------------------------------------------------
 
 with col4:
 
-    st.subheader("Member Lifetime Distribution")
-
-    lifetime_data = pd.DataFrame(
-        {
-            "Lifetime (Months)": [
-                1,
-                2,
-                3,
-                4,
-                5,
-                6,
-                7,
-                8
-            ],
-            "Members": [
-                30,
-                70,
-                120,
-                150,
-                100,
-                60,
-                45,
-                35
-            ]
-        }
-    )
+    st.subheader("Member Lifetime by Churn Status")
 
     st.bar_chart(
         lifetime_data,
-        x="Lifetime (Months)",
-        y="Members"
+        x="Churn Status",
+        y="Average Lifetime (Months)"
+    )
+
+    retained_lifetime = lifetime_data.loc[
+        lifetime_data["Churn Status"] == "Retained",
+        "Average Lifetime (Months)"
+    ].iloc[0]
+
+    churned_lifetime = lifetime_data.loc[
+        lifetime_data["Churn Status"] == "Churned",
+        "Average Lifetime (Months)"
+    ].iloc[0]
+
+    st.info(
+        f"Insight: Retained members have an average lifetime "
+        f"of {retained_lifetime:.2f} months, compared with "
+        f"{churned_lifetime:.2f} months for churned members."
     )
 
 
+# --------------------------------------------------
+# SUMMARY
+# --------------------------------------------------
+
 st.divider()
 
-st.subheader("Analysis Status")
+st.subheader("Key Analytics Summary")
 
-st.info(
-    "The current charts use placeholder values for UI development. "
-    "They will be connected to the cleaned dataset and calculated analytics "
-    "before the final demo."
+summary_col1, summary_col2, summary_col3 = st.columns(3)
+
+with summary_col1:
+
+    st.metric(
+        "1-Month Churn Rate",
+        f"{contract_data.loc[contract_data['Contract Period'] == '1 Month', 'Churn Rate'].iloc[0]:.2f}%"
+    )
+
+with summary_col2:
+
+    st.metric(
+        "Group Visit Churn Rate",
+        f"{group_churn:.2f}%"
+    )
+
+with summary_col3:
+
+    st.metric(
+        "No Group Visit Churn Rate",
+        f"{no_group_churn:.2f}%"
+    )
+
+
+# --------------------------------------------------
+# DISCLAIMER
+# --------------------------------------------------
+
+st.divider()
+
+st.caption(
+    "Note: These insights represent statistical associations "
+    "and predictive indicators. They do not imply direct causation."
 )
