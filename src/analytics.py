@@ -4,6 +4,7 @@ import pandas as pd
 DATA_PATH = "data/processed/cleaned_data.csv"
 
 
+
 def load_data(path=DATA_PATH):
     """Load the cleaned fitness churn dataset."""
     return pd.read_csv(path)
