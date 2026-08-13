@@ -1,5 +1,7 @@
+from pathlib import Path
 import streamlit as st
 import pandas as pd
+
 
 # --------------------------------------------------
 # PAGE CONFIGURATION
@@ -12,6 +14,38 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# --------------------------------------------------
+# LOAD CLEANED DATA
+# --------------------------------------------------
+
+DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "processed" / "cleaned_data.csv"
+
+df = pd.read_csv(DATA_PATH)
+# --------------------------------------------------
+# DATA CALCULATIONS
+# --------------------------------------------------
+
+total_members = len(df)
+
+churn_rate = df["Churn"].mean() * 100
+
+average_lifetime = df["Lifetime"].mean()
+
+average_class_frequency = df["Avg_class_frequency_total"].mean()
+
+current_month_frequency = df[
+    "Avg_class_frequency_current_month"
+].mean()
+
+average_contract_period = df[
+    "Contract_period"
+].mean()
+
+group_visit_rate = df["Group_visits"].mean() * 100
+
+churned_members = df["Churn"].sum()
+
+retained_members = total_members - churned_members
 # --------------------------------------------------
 # CUSTOM CSS
 # --------------------------------------------------
@@ -131,6 +165,7 @@ st.write("")
 
 
 # --------------------------------------------------
+# --------------------------------------------------
 # KPI CARDS
 # --------------------------------------------------
 
@@ -139,32 +174,26 @@ col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.metric(
         label="Total Members",
-        value="4,000",
-        delta="12%"
+        value=f"{total_members:,}"
     )
 
 with col2:
     st.metric(
         label="Overall Churn Rate",
-        value="26.4%",
-        delta="2.1%",
-        delta_color="inverse"
+        value=f"{churn_rate:.1f}%"
     )
 
 with col3:
     st.metric(
         label="Avg Member Lifetime",
-        value="4.7 mo",
-        delta="0.4"
+        value=f"{average_lifetime:.1f} mo"
     )
 
 with col4:
     st.metric(
         label="High-Risk Members",
-        value="437",
-        delta="Stable"
+        value="Pending Model"
     )
-
 
 st.write("")
 st.divider()
@@ -185,61 +214,57 @@ with left_col:
 
     st.subheader("Churn Overview")
 
-    churn_data = pd.DataFrame(
-        {
-            "Status": ["Retained", "Churned"],
-            "Members": [2944, 1056]
-        }
-    )
+    # --------------------------------------------------
+# CHURN OVERVIEW
+# --------------------------------------------------
 
-    st.bar_chart(
-        churn_data,
-        x="Status",
-        y="Members"
-    )
+churn_data = pd.DataFrame({
+    "Status": ["Retained", "Churned"],
+    "Members": [
+        retained_members,
+        churned_members
+    ]
+})
 
+st.bar_chart(
+    churn_data,
+    x="Status",
+    y="Members"
+)
 
 # --------------------------------------------------
+## --------------------------------------------------
 # ENGAGEMENT OVERVIEW
 # --------------------------------------------------
 
-with right_col:
+metric_a, metric_b = st.columns(2)
 
-    st.subheader("Engagement Overview")
+with metric_a:
+    st.metric(
+        "Avg Class Frequency",
+        f"{average_class_frequency:.1f} visits / week"
+    )
 
-    metric_a, metric_b = st.columns(2)
+with metric_b:
+    st.metric(
+        "Current Month Frequency",
+        f"{current_month_frequency:.1f} visits / week"
+    )
 
-    with metric_a:
-        st.metric(
-            "Avg Class Frequency",
-            "2.8 visits / week"
-        )
+metric_c, metric_d = st.columns(2)
 
-    with metric_b:
-        st.metric(
-            "Current Month Frequency",
-            "2.1 visits / week"
-        )
+with metric_c:
+    st.metric(
+        "Avg Contract Period",
+        f"{average_contract_period:.1f} months"
+    )
 
-    metric_c, metric_d = st.columns(2)
-
-    with metric_c:
-        st.metric(
-            "Avg Contract Period",
-            "4.6 months"
-        )
-
-    with metric_d:
-        st.metric(
-            "Group Visit Rate",
-            "41%"
-        )
-
-
-st.write("")
-st.divider()
-
-
+with metric_d:
+    st.metric(
+        "Group Visit Rate",
+        f"{group_visit_rate:.1f}%"
+    )
+# --------------------------------------------------
 # --------------------------------------------------
 # AT-RISK MEMBERS
 # --------------------------------------------------
@@ -247,67 +272,10 @@ st.divider()
 st.subheader("At-Risk Members")
 
 st.caption(
-    "Members identified based on engagement and churn pattern analysis."
+    "Members identified through the churn prediction model."
 )
 
-
-# Mock data for UI development.
-# This will be replaced with real model output later.
-
-risk_data = pd.DataFrame(
-    {
-        "Member ID": [
-            "M1024",
-            "M1048",
-            "M1091",
-            "M1105"
-        ],
-        "Contract Period": [
-            "1 Month",
-            "3 Months",
-            "6 Months",
-            "12 Months"
-        ],
-        "Engagement Level": [
-            "Critical",
-            "Declining",
-            "Active",
-            "Critical"
-        ],
-        "Churn Probability": [
-            "87%",
-            "74%",
-            "42%",
-            "12%"
-        ],
-        "Risk Status": [
-            "🔴 High Risk",
-            "🔴 High Risk",
-            "🟡 Medium Risk",
-            "🟢 Low Risk"
-        ],
-        "Action": [
-            "Review",
-            "Review",
-            "Review",
-            "Review"
-        ]
-    }
-)
-
-st.dataframe(
-    risk_data,
-    use_container_width=True,
-    hide_index=True
-)
-
-
-# --------------------------------------------------
-# FOOTER
-# --------------------------------------------------
-
-st.write("")
-
-st.caption(
-    "Fitness Retain AI • Customer Retention Analytics"
+st.info(
+    "Churn risk predictions will appear here once the "
+    "machine learning model is integrated."
 )
