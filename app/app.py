@@ -22,6 +22,27 @@ DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "processed" / "cle
 
 df = pd.read_csv(DATA_PATH)
 # --------------------------------------------------
+PREDICTION_PATH = (
+    Path(__file__).resolve().parent.parent
+    / "data"
+    / "processed"
+    / "churn_predictions.csv"
+)
+
+predictions_df = pd.read_csv(PREDICTION_PATH)
+
+high_risk_count = (
+    predictions_df["risk_status"] == "High"
+).sum()
+
+medium_risk_count = (
+    predictions_df["risk_status"] == "Medium"
+).sum()
+
+low_risk_count = (
+    predictions_df["risk_status"] == "Low"
+).sum()
+
 # DATA CALCULATIONS
 # --------------------------------------------------
 
@@ -192,7 +213,7 @@ with col3:
 with col4:
     st.metric(
         label="High-Risk Members",
-        value="Pending Model"
+        value=f"{high_risk_count:,}"
     )
 
 st.write("")
@@ -266,16 +287,55 @@ with metric_d:
     )
 # --------------------------------------------------
 # --------------------------------------------------
+## --------------------------------------------------
 # AT-RISK MEMBERS
 # --------------------------------------------------
 
 st.subheader("At-Risk Members")
 
 st.caption(
-    "Members identified through the churn prediction model."
+    "Members identified as having a high predicted churn risk."
 )
 
-st.info(
-    "Churn risk predictions will appear here once the "
-    "machine learning model is integrated."
+at_risk_members = predictions_df[
+    predictions_df["risk_status"] == "High"
+].copy()
+
+at_risk_members = at_risk_members.sort_values(
+    "churn_probability",
+    ascending=False
 )
+
+if at_risk_members.empty:
+
+    st.info("No high-risk members were identified.")
+
+else:
+
+    display_data = at_risk_members[
+        [
+            "Contract_period",
+            "engagement_level",
+            "churn_probability",
+            "risk_status"
+        ]
+    ].copy()
+
+    display_data["churn_probability"] = (
+        display_data["churn_probability"] * 100
+    ).round(1).astype(str) + "%"
+
+    display_data = display_data.rename(
+        columns={
+            "Contract_period": "Contract Period",
+            "engagement_level": "Engagement Level",
+            "churn_probability": "Churn Probability",
+            "risk_status": "Risk Status"
+        }
+    )
+
+    st.dataframe(
+        display_data,
+        use_container_width=True,
+        hide_index=True
+    )
