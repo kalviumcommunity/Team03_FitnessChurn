@@ -13,7 +13,8 @@ from src.analytics import (
     churn_rate_by_contract,
     churn_rate_by_group_visits,
     engagement_churn_relationship,
-    lifetime_churn_relationship
+    lifetime_churn_relationship,
+    get_insights
 )
 
 st.set_page_config(
@@ -27,6 +28,7 @@ st.set_page_config(
 # --------------------------------------------------
 
 df = load_data()
+insights = get_insights(df)
 
 contract_data = churn_rate_by_contract(df)
 group_data = churn_rate_by_group_visits(df)
