@@ -92,6 +92,17 @@ Machine learning model development
 Streamlit dashboard
 
 ---
+Data preprocessing
+        ↓
+Feature selection
+        ↓
+Model training
+        ↓
+Model evaluation
+        ↓
+Prediction
+        ↓
+Risk classification
 
 ## License
 
