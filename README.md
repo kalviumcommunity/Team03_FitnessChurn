@@ -104,6 +104,28 @@ Prediction
         ↓
 Risk classification
 
+Raw Dataset
+     ↓
+Data Cleaning
+     ↓
+Feature Engineering
+     ↓
+Feature Selection
+     ↓
+Train/Test Split
+     ↓
+Model Training
+     ↓
+Model Evaluation
+     ↓
+Random Forest Selection
+     ↓
+Churn Probability
+     ↓
+Risk Classification
+     ↓
+Final Predictions
+
 ## License
 
 This project is licensed under the MIT License.
